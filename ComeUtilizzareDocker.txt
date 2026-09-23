@@ -1,0 +1,60 @@
+═══════════════════════════════════════════════════════════════
+  ISTRUZIONI DOCKER — PROGETTO MICROSERVIZI
+═══════════════════════════════════════════════════════════════
+
+── AVVIO ──────────────────────────────────────────────────────
+
+  In locale / a casa (MySQL dentro Docker):
+    docker-compose -f docker-compose.autonomo.yml up --build
+
+  A scuola (MySQL del server scolastico):
+    docker-compose -f docker-compose.scuola.yml up --build
+
+  A casa con MySQL esterno (VirtualBox):
+    docker-compose -f docker-compose.casa.yml up --build
+
+── STOP ───────────────────────────────────────────────────────
+
+  Fermare i container (dati preservati):
+    docker-compose -f docker-compose.autonomo.yml down
+
+  Fermare E cancellare il volume DB (riparte da zero):
+    docker-compose -f docker-compose.autonomo.yml down -v
+
+── ACCESSO AL DATABASE (solo profilo autonomo) ────────────────
+
+  Host:     127.0.0.1
+  Porta:    3307          ← attenzione: NON 3306!
+  Database: employeedb
+  Username: appuser
+  Password: apppass
+
+── NOTE IMPORTANTI ────────────────────────────────────────────
+
+  * I dati di esempio (8 dipendenti) vengono inseriti
+    AUTOMATICAMENTE al primo avvio, poi NON vengono
+    reinseriti anche se si riavvia il container.
+
+  * Per resettare completamente il DB:
+      docker-compose -f docker-compose.autonomo.yml down -v
+      docker-compose -f docker-compose.autonomo.yml up --build
+
+  * MS1 Employee Service: http://localhost:8080
+  * MS2 Salary Analytics: http://localhost:8081
+
+── ENDPOINT PRINCIPALI ────────────────────────────────────────
+
+  POST /auth/register     → registra utente
+  POST /auth/login        → login, ricevi token JWT
+
+  GET  /impiegati                     → lista completa
+  GET  /impiegati/id/{id}             → per ID
+  GET  /impiegati/cognome/{cognome}   → per cognome
+  GET  /impiegati/cerca?id={id}       → query string
+  POST /impiegati                     → crea impiegato
+  PUT  /impiegati/{id}                → sostituisce impiegato
+  PATCH /impiegati/{id}               → aggiorna parzialmente
+  DELETE /impiegati/{id}              → elimina impiegato
+  GET  /impiegati/{id}/salary         → analisi stipendio (MS2)
+
+══════════════════════════════════════════════════════════════

@@ -1,0 +1,55 @@
+# Per avviare il progetto esegui: docker-compose up
+# Per fermarlo: docker-compose down
+# Per fermarlo e cancellare i dati: docker-compose down -v
+version: '3.9'
+
+services:
+
+  ms1-employee:
+    image: ghcr.io/riccardocroce07/employee-service:latest
+    container_name: ms1-employee
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/employeedb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SALARY_SERVICE_URL: http://ms2-salary:8081
+      JWT_SECRET: chiaveSuperSegretaLungaAlmeno32Caratteri
+      JWT_EXPIRATION: 86400000
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ms2-salary:
+        condition: service_started
+
+  ms2-salary:
+    image: ghcr.io/riccardocroce07/salary-analytics:latest
+    container_name: ms2-salary
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+
+  mysql:
+    image: mysql:8.3
+    container_name: mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: employeedb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql-data:

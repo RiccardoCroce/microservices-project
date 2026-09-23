@@ -1,0 +1,47 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────
+# DOCKER COMPOSE — SCUOLA
+# Usa il MySQL della scuola (172.16.1.99:3306, db: db20213)
+# Avvio: docker-compose -f docker-compose.scuola.yml up --build
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ─────────────────────────────────────────
+  # MS1 - Employee Service (porta 8080)
+  # ─────────────────────────────────────────
+  ms1-employee:
+    build:
+      context: ./employee-service      # ← CORRETTO (era ./demo)
+    container_name: ms1-employee
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Attiva il profilo "scuola" — Spring legge application-scuola.properties
+      SPRING_PROFILES_ACTIVE: scuola
+      # Il MySQL della scuola è un server di rete raggiungibile direttamente
+      SPRING_DATASOURCE_URL: jdbc:mysql://172.16.1.99:3306/db20213?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ut20213
+      SPRING_DATASOURCE_PASSWORD: pw20213
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # MS2 raggiungibile per nome container nella rete Docker
+      SALARY_SERVICE_URL: http://ms2-salary:8081
+      JWT_SECRET: chiaveSuperSegretaLungaAlmeno32Caratteri
+      JWT_EXPIRATION: 86400000
+    depends_on:
+      ms2-salary:
+        condition: service_started
+
+  # ─────────────────────────────────────────
+  # MS2 - Salary Analytics (porta 8081)
+  # ─────────────────────────────────────────
+  ms2-salary:
+    build:
+      context: ./salary-analytics
+    container_name: ms2-salary
+    restart: unless-stopped
+    ports:
+      - "8081:8081"

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login · Employee Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #161920;
+      --card: #1e2230;
+      --border: #2a2f3f;
+      --accent: #4fffb0;
+      --accent2: #7b6fff;
+      --danger: #ff4f6b;
+      --warn: #ffb74f;
+      --gold: #ffd166;
+      --text: #e8eaf0;
+      --muted: #7a7f96;
+      --mono: 'Space Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── GLOW BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(79,255,176,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ── CARD ── */
+    .login-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 44px;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+      animation: fadeUp .35s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(20px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ── LOGO ── */
+    .login-logo {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .login-logo .dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+    .login-logo .brand {
+      font-family: var(--mono);
+      font-size: 1rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .login-logo .tagline {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 32px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 9px;
+      font-family: var(--sans);
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--muted);
+      border-radius: 7px;
+      transition: all .2s;
+    }
+    .tab-btn.active {
+      background: var(--card);
+      color: var(--accent);
+      box-shadow: 0 2px 8px rgba(0,0,0,.3);
+    }
+
+    /* ── FORMS ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    .form-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap .input-icon {
+      position: absolute;
+      left: 13px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+    input[type=text], input[type=password] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 13px 11px 40px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input[type=text]:focus, input[type=password]:focus {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 3px rgba(123,111,255,0.12);
+    }
+
+    /* ── BUTTON ── */
+    .btn-login {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent2), #5a4fcf);
+      color: #fff;
+      transition: all .2s;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-login:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(123,111,255,.3); }
+    .btn-login:active { transform: translateY(0); }
+    .btn-login:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .btn-register {
+      background: linear-gradient(135deg, var(--accent), #2db87a);
+      color: #0d0f14;
+    }
+
+    /* ── SPINNER ── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOKEN BOX ── */
+    .token-box {
+      display: none;
+      margin-top: 24px;
+      background: var(--bg);
+      border: 1px solid rgba(79,255,176,.3);
+      border-radius: 12px;
+      padding: 18px;
+      animation: fadeIn .3s ease;
+    }
+    .token-box.show { display: block; }
+    .token-label {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .token-label::before {
+      content: '';
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .token-value {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      word-break: break-all;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .btn-copy {
+      background: rgba(79,255,176,.1);
+      border: 1px solid rgba(79,255,176,.25);
+      border-radius: 7px;
+      color: var(--accent);
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: all .18s;
+      margin-right: 8px;
+    }
+    .btn-copy:hover { background: rgba(79,255,176,.18); }
+
+    .btn-go {
+      background: rgba(123,111,255,.15);
+      border: 1px solid rgba(123,111,255,.3);
+      border-radius: 7px;
+      color: var(--accent2);
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: all .18s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-go:hover { background: rgba(123,111,255,.25); }
+
+    /* ── ERROR ── */
+    .error-msg {
+      display: none;
+      background: rgba(255,79,107,.08);
+      border: 1px solid rgba(255,79,107,.25);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: var(--danger);
+      margin-top: 14px;
+    }
+    .error-msg.show { display: block; animation: fadeIn .2s ease; }
+
+    /* ── SUCCESS MSG ── */
+    .success-msg {
+      display: none;
+      background: rgba(79,255,176,.06);
+      border: 1px solid rgba(79,255,176,.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: var(--accent);
+      margin-top: 14px;
+    }
+    .success-msg.show { display: block; animation: fadeIn .2s ease; }
+
+    /* ── FOOTER ── */
+    .card-footer {
+      text-align: center;
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    /* ── TOAST ── */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 0.86rem; max-width: 320px; display: flex; align-items: flex-start; gap: 10px; animation: slideIn .25s ease; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+    .toast.success { border-left: 3px solid var(--accent); }
+    .toast.error   { border-left: 3px solid var(--danger); }
+    .toast-icon { font-size: 1rem; flex-shrink: 0; }
+    .toast-msg { color: var(--text); line-height: 1.4; }
+    @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+
+    @media (max-width: 480px) {
+      .login-card { padding: 32px 24px; margin: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-card">
+
+  <!-- Logo -->
+  <div class="login-logo">
+    <div><span class="dot"></span><span class="brand">Employee Manager</span></div>
+    <div class="tagline">Spring Boot · JWT Authentication</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">🔑 Login</button>
+    <button class="tab-btn" id="tab-register" onclick="switchTab('register')">✦ Registrati</button>
+  </div>
+
+  <!-- Base URL -->
+  <div style="margin-bottom:20px;">
+    <label>Base URL</label>
+    <div class="input-wrap">
+      <span class="input-icon">🌐</span>
+      <input type="text" id="baseUrl" value="http://localhost:8080"/>
+    </div>
+  </div>
+
+  <!-- ── LOGIN PANEL ── -->
+  <div class="tab-panel active" id="panel-login">
+    <div class="form-group">
+      <label>Username</label>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input type="text" id="login-username" placeholder="es: mario" onkeydown="if(event.key==='Enter') doLogin()"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()"/>
+      </div>
+    </div>
+
+    <button class="btn-login" id="login-btn" onclick="doLogin()">
+      🔑 Accedi
+    </button>
+
+    <div class="error-msg" id="login-error"></div>
+
+    <!-- Token risultato -->
+    <div class="token-box" id="token-box">
+      <div class="token-label">Bearer Token ricevuto</div>
+      <div class="token-value" id="token-value"></div>
+      <button class="btn-copy" onclick="copyToken()">📋 Copia token</button>
+      <a class="btn-go" href="index.html">→ Vai alla Dashboard</a>
+    </div>
+  </div>
+
+  <!-- ── REGISTER PANEL ── -->
+  <div class="tab-panel" id="panel-register">
+    <div class="form-group">
+      <label>Username</label>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input type="text" id="reg-username" placeholder="scegli un username"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="reg-password" placeholder="minimo 6 caratteri"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Conferma Password</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="reg-confirm" placeholder="ripeti la password" onkeydown="if(event.key==='Enter') doRegister()"/>
+      </div>
+    </div>
+
+    <button class="btn-login btn-register" id="reg-btn" onclick="doRegister()">
+      ✦ Crea account
+    </button>
+
+    <div class="error-msg"   id="reg-error"></div>
+    <div class="success-msg" id="reg-success"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="card-footer">
+    MS1 · porta 8080 &nbsp;·&nbsp; Spring Security + JWT
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  // ── TABS ──────────────────────────────────────────────────
+  function switchTab(tab) {
+    ['login','register'].forEach(t => {
+      document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+      document.getElementById('tab-'   + t).classList.toggle('active', t === tab);
+    });
+    hideMessages();
+  }
+
+  function hideMessages() {
+    ['login-error','token-box','reg-error','reg-success'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('show');
+    });
+  }
+
+  function base() {
+    return document.getElementById('baseUrl').value.replace(/\/$/, '');
+  }
+
+  // ── TOAST ─────────────────────────────────────────────────
+  function toast(msg, type = 'info') {
+    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  // ── LOGIN ─────────────────────────────────────────────────
+  async function doLogin() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl    = document.getElementById('login-error');
+    const tokenBox = document.getElementById('token-box');
+    const btn      = document.getElementById('login-btn');
+
+    errEl.classList.remove('show');
+    tokenBox.classList.remove('show');
+
+    if (!username || !password) {
+      errEl.textContent = 'Inserisci username e password.';
+      errEl.classList.add('show');
+      return;
+    }
+
+    btn.innerHTML = '<span class="spinner"></span> Accesso in corso…';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`${base()}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.token) {
+        // Salva il token in localStorage così la dashboard lo può usare
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('ruolo', data.ruolo);
+        localStorage.setItem('username', data.username || username);
+
+        document.getElementById('token-value').textContent = data.token;
+        tokenBox.classList.add('show');
+        toast(`Benvenuto, ${username}!`, 'success');
+      } else {
+        errEl.textContent = data.message || 'Credenziali non valide. Riprova.';
+        errEl.classList.add('show');
+        toast('Login fallito', 'error');
+      }
+    } catch (e) {
+      errEl.textContent = 'Impossibile raggiungere il server. Verifica che Spring Boot sia avviato.';
+      errEl.classList.add('show');
+      toast('Connessione fallita', 'error');
+    } finally {
+      btn.innerHTML = '🔑 Accedi';
+      btn.disabled = false;
+    }
+  }
+
+  // ── REGISTER ──────────────────────────────────────────────
+  async function doRegister() {
+    const username = document.getElementById('reg-username').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const confirm  = document.getElementById('reg-confirm').value;
+    const errEl    = document.getElementById('reg-error');
+    const okEl     = document.getElementById('reg-success');
+    const btn      = document.getElementById('reg-btn');
+
+    errEl.classList.remove('show');
+    okEl.classList.remove('show');
+
+    if (!username || !password) {
+      errEl.textContent = 'Compila tutti i campi.';
+      errEl.classList.add('show');
+      return;
+    }
+    if (password !== confirm) {
+      errEl.textContent = 'Le password non coincidono.';
+      errEl.classList.add('show');
+      return;
+    }
+    if (password.length < 6) {
+      errEl.textContent = 'La password deve essere di almeno 6 caratteri.';
+      errEl.classList.add('show');
+      return;
+    }
+
+    btn.innerHTML = '<span class="spinner"></span> Registrazione…';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`${base()}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const text = await res.text();
+
+      if (res.ok) {
+        okEl.textContent = '✓ Account creato! Ora puoi fare il login.';
+        okEl.classList.add('show');
+        document.getElementById('reg-username').value = '';
+        document.getElementById('reg-password').value = '';
+        document.getElementById('reg-confirm').value  = '';
+        toast('Registrazione completata!', 'success');
+        setTimeout(() => switchTab('login'), 1800);
+      } else {
+        errEl.textContent = text || 'Errore durante la registrazione.';
+        errEl.classList.add('show');
+        toast('Registrazione fallita', 'error');
+      }
+    } catch (e) {
+      errEl.textContent = 'Impossibile raggiungere il server.';
+      errEl.classList.add('show');
+      toast('Connessione fallita', 'error');
+    } finally {
+      btn.innerHTML = '✦ Crea account';
+      btn.disabled = false;
+    }
+  }
+
+  // ── COPIA TOKEN ───────────────────────────────────────────
+  function copyToken() {
+    const token = document.getElementById('token-value').textContent;
+    navigator.clipboard.writeText(token).then(() => {
+      toast('Token copiato negli appunti!', 'success');
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────
+# DOCKER COMPOSE — AUTONOMO (funziona ovunque, anche senza rete scuola)
+# MySQL è dentro Docker, tabelle e dati creati automaticamente
+# Avvio:  docker-compose -f docker-compose.autonomo.yml up --build
+# Reset:  docker-compose -f docker-compose.autonomo.yml down -v
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ─────────────────────────────────────────
+  # DATABASE MySQL (dentro Docker)
+  # ─────────────────────────────────────────
+  mysql:
+    image: mysql:8.3
+    container_name: mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: employeedb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ─────────────────────────────────────────
+  # MS1 - Employee Service (porta 8080)
+  # ─────────────────────────────────────────
+  ms1-employee:
+    build:
+      context: ./employee-service
+    container_name: ms1-employee
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/employeedb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SALARY_SERVICE_URL: http://ms2-salary:8081
+      JWT_SECRET: chiaveSuperSegretaLungaAlmeno32Caratteri
+      JWT_EXPIRATION: 86400000
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ms2-salary:
+        condition: service_started
+
+  # ─────────────────────────────────────────
+  # MS2 - Salary Analytics (porta 8081)
+  # ─────────────────────────────────────────
+  ms2-salary:
+    build:
+      context: ./salary-analytics
+    container_name: ms2-salary
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+
+volumes:
+  mysql-data:

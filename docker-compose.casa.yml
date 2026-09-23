@@ -1,0 +1,49 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────
+# DOCKER COMPOSE — CASA
+# Usa il MySQL di casa (192.168.56.1:3306, db: sys)
+# Avvio: docker-compose -f docker-compose.casa.yml up --build
+# Se non hai compilato niente: docker-compose -f docker-compose.casa.yml up
+# Fermare: docker-compose -f docker-compose.casa.yml down -v
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ─────────────────────────────────────────
+  # MS1 - Employee Service (porta 8080)
+  # ─────────────────────────────────────────
+  ms1-employee:
+    build:
+      context: ./employee-service
+    container_name: ms1-employee
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Attiva il profilo "casa" — Spring legge application-casa.properties
+      SPRING_PROFILES_ACTIVE: casa
+      # Il MySQL di casa è sul PC host → host.docker.internal lo raggiunge
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/sys?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: utprova
+      SPRING_DATASOURCE_PASSWORD: pwprova
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # MS2 raggiungibile per nome container nella rete Docker
+      SALARY_SERVICE_URL: http://ms2-salary:8081   # ← CORRETTO (era http://salary:8081)
+      JWT_SECRET: chiaveSuperSegretaLungaAlmeno32Caratteri
+      JWT_EXPIRATION: 86400000
+    depends_on:
+      ms2-salary:
+        condition: service_started
+
+  # ─────────────────────────────────────────
+  # MS2 - Salary Analytics (porta 8081)
+  # ─────────────────────────────────────────
+  ms2-salary:
+    build:
+      context: ./salary-analytics
+    container_name: ms2-salary
+    restart: unless-stopped
+    ports:
+      - "8081:8081"

@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employee Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #161920;
+      --card: #1e2230;
+      --border: #2a2f3f;
+      --accent: #4fffb0;
+      --accent2: #7b6fff;
+      --danger: #ff4f6b;
+      --warn: #ffb74f;
+      --gold: #ffd166;
+      --text: #e8eaf0;
+      --muted: #7a7f96;
+      --mono: 'Space Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 32px; display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+    }
+    .header-logo { width: 44px; height: 44px; border-radius: 10px; border: 2px solid var(--accent); object-fit: cover; }
+    .header-brand { font-family: var(--mono); font-size: 1rem; color: var(--text); letter-spacing: 1px; }
+    .header-sub { font-size: 0.72rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
+    #infoUtente { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-left: auto; }
+    #btnLogout {
+      background: rgba(255,79,107,.1); color: var(--danger); border: 1px solid rgba(255,79,107,.35);
+      padding: 7px 16px; border-radius: 7px; cursor: pointer; font-family: var(--mono); font-size: 0.75rem; font-weight: 700;
+      transition: all .18s; display: flex; align-items: center; gap: 6px;
+    }
+    #btnLogout:hover { background: var(--danger); color: white; }
+
+    /* ── LAYOUT ── */
+    .layout { display: flex; flex: 1; min-height: calc(100vh - 73px); align-items: stretch; }
+
+    /* ── SIDEBAR ── */
+    nav {
+      width: 230px; background: var(--surface); border-right: 1px solid var(--border);
+      padding: 20px 0; flex-shrink: 0; position: sticky; top: 0; height: calc(100vh - 73px); overflow-y: auto;
+      min-height: 100%;
+    }
+    .section-label {
+      font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+      letter-spacing: 2px; text-transform: uppercase; padding: 0 20px 6px; margin-top: 18px; display: block;
+    }
+    nav button {
+      display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none;
+      cursor: pointer; padding: 9px 20px; font-family: var(--sans); font-size: 0.86rem;
+      color: var(--muted); text-align: left; transition: all .18s; border-left: 2px solid transparent;
+    }
+    nav button:hover { color: var(--text); background: rgba(255,255,255,.03); }
+    nav button.active { color: var(--accent); background: rgba(79,255,176,.06); border-left-color: var(--accent); }
+    nav button.active-gold { color: var(--gold) !important; background: rgba(255,209,102,.06) !important; border-left-color: var(--gold) !important; }
+
+    /* ── BADGE HTTP METHOD ── */
+    .badge {
+      font-family: var(--mono); font-size: 0.6rem; padding: 2px 6px;
+      border-radius: 4px; font-weight: 700; flex-shrink: 0;
+    }
+    .badge-get   { background: rgba(79,255,176,.15);  color: var(--accent); }
+    .badge-post  { background: rgba(123,111,255,.2);  color: var(--accent2); }
+    .badge-put   { background: rgba(255,183,79,.15);  color: var(--warn); }
+    .badge-patch { background: rgba(255,183,79,.08);  color: var(--warn); border: 1px solid rgba(255,183,79,.2); }
+    .badge-del   { background: rgba(255,79,107,.15);  color: var(--danger); }
+    .badge-ms2   { background: rgba(255,209,102,.15); color: var(--gold); }
+    .badge-shield{ background: rgba(123,111,255,.15); color: var(--accent2); }
+
+    /* ── MAIN CONTENT ── */
+    main { flex: 1; padding: 32px 36px; max-width: 960px; }
+
+    /* ── PANEL ── */
+    .panel { display: none; animation: fadeIn .22s ease; }
+    .panel.active { display: block; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+    .panel-title {
+      font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px;
+    }
+    .panel-heading { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; color: var(--text); }
+
+    /* ── URL BAR ── */
+    .url-bar {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 16px; font-family: var(--mono); font-size: 0.76rem; color: var(--muted);
+      margin-bottom: 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .url-endpoint { color: var(--accent2); }
+
+    /* ── FORM ── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label, .form-row label {
+      display: block; font-family: var(--mono); font-size: 0.68rem; color: var(--muted);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px;
+    }
+    .form-group input, .form-row input,
+    .form-group select, .form-row select {
+      width: 100%; padding: 9px 13px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 0.88rem; background: var(--bg); color: var(--text);
+      outline: none; font-family: var(--sans); transition: border-color .2s;
+    }
+    .form-group input:focus, .form-row input:focus,
+    .form-group select:focus, .form-row select:focus { border-color: var(--accent2); }
+    select option { background: var(--card); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px;
+      border-radius: 8px; border: none; cursor: pointer; font-family: var(--sans);
+      font-size: 0.88rem; font-weight: 500; transition: all .18s; margin-top: 4px;
+    }
+    .btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-get   { background: rgba(79,255,176,.12);  color: var(--accent);  border: 1px solid rgba(79,255,176,.25); }
+    .btn-post  { background: rgba(123,111,255,.15); color: var(--accent2); border: 1px solid rgba(123,111,255,.3); }
+    .btn-put   { background: rgba(255,183,79,.12);  color: var(--warn);    border: 1px solid rgba(255,183,79,.25); }
+    .btn-patch { background: rgba(255,183,79,.07);  color: var(--warn);    border: 1px solid rgba(255,183,79,.18); }
+    .btn-del   { background: rgba(255,79,107,.12);  color: var(--danger);  border: 1px solid rgba(255,79,107,.25); }
+    .btn-ms2   { background: rgba(255,209,102,.12); color: var(--gold);    border: 1px solid rgba(255,209,102,.3); }
+
+    /* ── NOTE ── */
+    .note {
+      background: rgba(123,111,255,.06); border: 1px solid rgba(123,111,255,.18);
+      border-radius: 8px; padding: 10px 14px; font-size: 0.8rem; color: var(--muted);
+      line-height: 1.6; margin-bottom: 18px;
+    }
+    .note strong { color: var(--accent2); }
+    .note-gold {
+      background: rgba(255,209,102,.05); border: 1px solid rgba(255,209,102,.2);
+      border-radius: 8px; padding: 10px 14px; font-size: 0.8rem; color: var(--muted);
+      line-height: 1.6; margin-bottom: 18px;
+    }
+    .note-gold strong { color: var(--gold); }
+
+    /* ── RESULTS / TABLE ── */
+    .results { margin-top: 22px; }
+    .results-label {
+      font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th {
+      background: rgba(79,255,176,.08); color: var(--accent); padding: 10px 12px;
+      text-align: left; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 1px; text-transform: uppercase;
+    }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+    tr:hover td { background: rgba(255,255,255,.02); }
+
+    /* tabella utenti header gold */
+    .tbl-gold th { background: rgba(255,209,102,.12); color: var(--gold); }
+
+    /* ── BADGE TIPO IMPIEGATO ── */
+    .tipo-operaio   { background: rgba(79,255,176,.12);  color: var(--accent);  padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-family: var(--mono); }
+    .tipo-impiegato { background: rgba(123,111,255,.15); color: var(--accent2); padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-family: var(--mono); }
+    .tipo-quadro    { background: rgba(255,183,79,.15);  color: var(--warn);    padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-family: var(--mono); }
+    .tipo-dirigente { background: rgba(255,209,102,.2);  color: var(--gold);    padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-family: var(--mono); }
+
+    /* ── BADGE RUOLO ── */
+    .badgeAdmin { background: rgba(255,209,102,.2); color: var(--gold); padding: 2px 9px; border-radius: 10px; font-size: 0.73rem; font-family: var(--mono); }
+    .badgeUser  { background: rgba(122,127,150,.2); color: var(--muted); padding: 2px 9px; border-radius: 10px; font-size: 0.73rem; font-family: var(--mono); }
+    .btnPromuovi {
+      background: rgba(123,111,255,.15); color: var(--accent2); border: 1px solid rgba(123,111,255,.3);
+      padding: 4px 12px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-family: var(--sans); transition: all .15s;
+    }
+    .btnPromuovi:hover { background: rgba(123,111,255,.3); }
+    .btnRetrocedi {
+      background: rgba(255,183,79,.1); color: var(--warn); border: 1px solid rgba(255,183,79,.3);
+      padding: 4px 12px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-family: var(--sans); transition: all .15s;
+    }
+    .btnRetrocedi:hover { background: rgba(255,183,79,.25); }
+
+    /* ── BONUS BADGE ── */
+    .bonus-si  { background: rgba(79,255,176,.12); color: var(--accent); padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-family: var(--mono); }
+    .bonus-no  { background: rgba(122,127,150,.12); color: var(--muted); padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-family: var(--mono); }
+
+    /* ── SALARY CARD ── */
+    .salary-card {
+      background: var(--card); border: 1px solid rgba(255,209,102,.25);
+      border-radius: 16px; padding: 28px; margin-top: 16px;
+    }
+    .salary-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; margin-bottom: 24px;
+    }
+    .salary-name { font-size: 1.25rem; font-weight: 700; }
+    .salary-role { font-family: var(--mono); font-size: 0.7rem; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+    .score-ring { text-align: center; }
+    .score-num { font-family: var(--mono); font-size: 2rem; font-weight: 700; color: var(--gold); line-height: 1; }
+    .score-label { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+    .score-bar-wrap { width: 120px; height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; margin: 6px auto 0; }
+    .score-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--danger), var(--warn), var(--accent)); transition: width .6s ease; }
+
+    .salary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .salary-row { background: rgba(255,255,255,.03); border-radius: 10px; padding: 14px 16px; border: 1px solid var(--border); }
+    .salary-row-label { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .salary-row-val { font-size: 1.05rem; font-weight: 600; }
+    .val-green  { color: var(--accent); }
+    .val-yellow { color: var(--gold); }
+    .val-red    { color: var(--danger); }
+    .val-purple { color: var(--accent2); }
+
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+    .irpef-title { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+    .irpef-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.84rem; }
+    .irpef-row:last-child { border-bottom: none; }
+    .irpef-row-label { color: var(--muted); }
+    .irpef-row-val { font-family: var(--mono); font-size: 0.8rem; }
+    .benchmark-tag {
+      display: inline-block; margin-top: 16px; padding: 6px 14px; border-radius: 20px;
+      font-size: 0.78rem; font-family: var(--mono); font-weight: 700;
+      background: rgba(79,255,176,.1); color: var(--accent); border: 1px solid rgba(79,255,176,.25);
+    }
+
+    /* ── BONUS BLOCK ── */
+    .bonus-block {
+      margin-top: 20px; padding: 16px 20px; border-radius: 12px;
+      border: 1px solid rgba(79,255,176,.2); background: rgba(79,255,176,.04);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .bonus-block.no-bonus {
+      border-color: rgba(122,127,150,.2); background: rgba(122,127,150,.04);
+    }
+    .bonus-label { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+    .bonus-amount { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+    .bonus-amount.zero { color: var(--muted); }
+    .bonus-info { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── TOAST ── */
+    #toast-container {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .toast {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 16px; font-size: 0.86rem; max-width: 320px;
+      display: flex; align-items: flex-start; gap: 10px;
+      animation: slideIn .25s ease; box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+    .toast.success { border-left: 3px solid var(--accent); }
+    .toast.error   { border-left: 3px solid var(--danger); }
+    .toast.info    { border-left: 3px solid var(--accent2); }
+    .toast-icon { font-size: 1rem; flex-shrink: 0; }
+    .toast-msg { color: var(--text); line-height: 1.4; }
+    @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+
+    /* ── SPINNER ── */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(79,255,176,.3); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── EMPTY STATE ── */
+    .empty-state { color: var(--muted); font-size: 0.88rem; padding: 16px 0; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <img src="logo.jpg" alt="Logo" class="header-logo"/>
+  <div>
+    <div class="header-brand">Employee Manager</div>
+    <div class="header-sub">REST API · Spring Boot</div>
+  </div>
+  <span id="infoUtente"></span>
+  <button id="btnLogout" onclick="logout()">⬡ LOGOUT</button>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav>
+    <!-- GET -->
+    <span class="section-label">Get</span>
+    <button onclick="mostra('secLista')" id="btn-secLista">
+      <span class="badge badge-get">GET</span> Tutti gli impiegati
+    </button>
+    <button onclick="mostra('secPerId')" id="btn-secPerId">
+      <span class="badge badge-get">GET</span> Per ID
+    </button>
+    <button onclick="mostra('secPerCognome')" id="btn-secPerCognome">
+      <span class="badge badge-get">GET</span> Per Cognome
+    </button>
+
+    <!-- WRITE (solo ADMIN) -->
+    <div id="menuAdmin" style="display:none">
+      <span class="section-label" style="margin-top:18px">Write</span>
+      <button onclick="mostra('secCrea')" id="btn-secCrea">
+        <span class="badge badge-post">POST</span> Crea impiegato
+      </button>
+      <button onclick="mostra('secModifica')" id="btn-secModifica">
+        <span class="badge badge-put">PUT</span> Sostituisci
+      </button>
+      <button onclick="mostra('secPatch')" id="btn-secPatch">
+        <span class="badge badge-patch">PATCH</span> Aggiorna parz.
+      </button>
+
+      <span class="section-label" style="margin-top:18px">Delete</span>
+      <button onclick="mostra('secElimina')" id="btn-secElimina">
+        <span class="badge badge-del">DELETE</span> Elimina
+      </button>
+    </div>
+
+    <!-- MS1 → MS2 -->
+    <span class="section-label" style="margin-top:18px">MS1 → MS2</span>
+    <button onclick="mostra('secStipendio')" id="btn-secStipendio">
+      <span class="badge badge-ms2">★ MS2</span> Salary Analytics
+    </button>
+
+    <!-- PERMESSI (solo ADMIN) -->
+    <div id="menuPermessi" style="display:none">
+      <span class="section-label" style="margin-top:18px">Permessi</span>
+      <button onclick="mostra('secPermessi')" id="btn-secPermessi">
+        <span class="badge badge-shield">🛡</span> Gestione Utenti
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+    <div id="toast-container"></div>
+
+    <!-- ── Lista completa ── -->
+    <div id="secLista" class="panel">
+      <p class="panel-title">GET · /impiegati</p>
+      <h2 class="panel-heading">Lista completa impiegati</h2>
+      <div class="url-bar">
+        <span>Endpoint:</span>
+        <span class="url-endpoint">GET /impiegati</span>
+      </div>
+      <button class="btn btn-get" id="btnCaricaLista" onclick="toggleLista()">▶ Carica lista</button>
+      <div class="results" id="risultatoLista"></div>
+    </div>
+
+    <!-- ── Cerca per ID ── -->
+    <div id="secPerId" class="panel">
+      <p class="panel-title">GET · /impiegati/id/{id}</p>
+      <h2 class="panel-heading">Cerca impiegato per ID</h2>
+      <div class="url-bar">
+        <span>Endpoint:</span>
+        <span class="url-endpoint">GET /impiegati/id/{id}</span>
+      </div>
+      <div class="form-group" style="max-width:280px">
+        <label>ID impiegato</label>
+        <input type="number" id="inId" placeholder="es. 1"/>
+      </div>
+      <button class="btn btn-get" onclick="getPerId()">▶ Esegui</button>
+      <div class="results" id="risultatoId"></div>
+    </div>
+
+    <!-- ── Cerca per cognome ── -->
+    <div id="secPerCognome" class="panel">
+      <p class="panel-title">GET · /impiegati/cognome/{cognome}</p>
+      <h2 class="panel-heading">Cerca per cognome</h2>
+      <div class="url-bar">
+        <span>Endpoint:</span>
+        <span class="url-endpoint">GET /impiegati/cognome/{cognome}</span>
+      </div>
+      <div class="form-group" style="max-width:280px">
+        <label>Cognome</label>
+        <input type="text" id="inCognome" placeholder="es. Rossi"/>
+      </div>
+      <button class="btn btn-get" onclick="getPerCognome()">▶ Esegui</button>
+      <div class="results" id="risultatoCognome"></div>
+    </div>
+
+    <!-- ── Crea (solo ADMIN) ── -->
+    <div id="secCrea" class="panel">
+      <p class="panel-title">POST · /impiegati</p>
+      <h2 class="panel-heading">Crea nuovo impiegato</h2>
+      <div class="url-bar">
+        <span>Endpoint:</span>
+        <span class="url-endpoint">POST /impiegati</span>
+      </div>
+      <div class="note">
+        <strong>Nota:</strong> Lo stipendio viene calcolato automaticamente dal sistema in base al tipo di impiegato e agli anni di anzianità. Non è possibile inserirlo manualmente.
+      </div>
+      <div class="form-row">
+        <div><label>Nome</label><input type="text" id="cNome" placeholder="es. Mario"/></div>
+        <div><label>Cognome</label><input type="text" id="cCognome" placeholder="es. Rossi"/></div>
+        <div><label>Email</label><input type="email" id="cEmail" placeholder="es. mario@mail.it"/></div>
+        <div><label>Età</label><input type="number" id="cEta" min="1" placeholder="es. 30"/></div>
+        <div>
+          <label>Tipo impiegato</label>
+          <select id="cTipo">
+            <option value="">— seleziona —</option>
+            <option value="OPERAIO">OPERAIO</option>
+            <option value="IMPIEGATO">IMPIEGATO</option>
+            <option value="QUADRO">QUADRO</option>
+            <option value="DIRIGENTE">DIRIGENTE</option>
+          </select>
+        </div>
+        <div><label>Data assunzione</label><input type="date" id="cDataAssunzione"/></div>
+      </div>
+      <button class="btn btn-post" onclick="creaImpiegato()">▶ Esegui</button>
+      <div class="results" id="risultatoCrea"></div>
+    </div>
+
+    <!-- ── PUT ── -->
+    <div id="secModifica" class="panel">
+      <p class="panel-title">PUT · /impiegati/{id}</p>
+      <h2 class="panel-heading">Sostituisci impiegato (PUT)</h2>
+      <div class="url-bar">
+        <span>Endpoint:</span>
+        <span class="url-endpoint">PUT /impiegati/{id}</span>
+      </div>
+      <div class="note"><strong>Nota:</strong> Sostituisce l'intero oggetto. Tutti i campi sono obbligatori. Lo stipendio viene ricalcolato automaticamente dal sistema.</div>
+      <div class="form-row">
+        <div><label>ID da modificare</label><input type="number" id="pId" placeholder="es. 1"/></div>
+        <div><label>Nome</label><input type="text" id="pNome" placeholder="es. Mario"/></div>
+        <div><label>Cognome</label><input type="text" id="pCognome" placeholder="es. Rossi"/></div>
+        <div><label>Email</label><input type="email" id="pEmail" placeholder="es. mario@mail.it"/></div>
+        <div><label>Età</label><input type="number" id="pEta" min="1" placeholder="es. 30"/></div>
+        <div>
+          <label>Tipo impiegato</label>
+          <select id="pTipo">
+            <option value="">— seleziona —</option>
+            <option value="OPERAIO">OPERAIO</option>
+            <option value="IMPIEGATO">IMPIEGATO</option>
+            <option value="QUADRO">QUADRO</option>
+            <option value="DIRIGENTE">DIRIGENTE</option>
+          </select>
+        </div>
+        <div><label>Data assunzione</label><input type="date" id="pDataAssunzione"/></div>
+      </div>
+      <button class="btn btn-put" onclick="putImpiegato()">▶ Esegui</button>
+      <div class="results" id="risultatoPut"></div>
+    </div>
+
+    <!-- ── PATCH ── -->
+    <div id="secPatch" class="panel">
+      <p class="panel-title">PATCH · /impiegati/{id}</p>
+      <h2 class="panel-heading">Aggiorna parzialmente (PATCH)</h2>
+      <div class="url-bar">
+        <span>Endpoint:</span>
+        <span class="url-endpoint">PATCH /impiegati/{id}</span>
+      </div>
+      <div class="note"><strong>Nota:</strong> Compila solo i campi che vuoi modificare. Gli altri rimangono invariati. Lo stipendio viene ricalcolato automaticamente dal sistema.</div>
+      <div class="form-row">
+        <div><label>ID da aggiornare</label><input type="number" id="paId" placeholder="es. 1"/></div>
+        <div><label>Nome (opzionale)</label><input type="text" id="paNome"/></div>
+        <div><label>Cognome (opzionale)</label><input type="text" id="paCognome"/></div>
+        <div><label>Email (opzionale)</label><input type="email" id="paEmail"/></div>
+        <div><label>Età (opzionale)</label><input type="number" id="paEta" min="1"/></div>
+        <div>
+          <label>Tipo impiegato (opzionale)</label>
+          <select id="paTipo">
+            <option value="">— invariato —</option>
+            <option value="OPERAIO">OPERAIO</option>
+            <option value="IMPIEGATO">IMPIEGATO</option>
+            <option value="QUADRO">QUADRO</option>
+            <option value="DIRIGENTE">DIRIGENTE</option>
+          </select>
+        </div>
+        <div><label>Data assunzione (opzionale)</label><input type="date" id="paDataAssunzione"/></div>
+      </div>
+      <button class="btn btn-patch" onclick="patchImpiegato()">▶ Esegui</button>
+      <div class="results" id="risultatoPatch"></div>
+    </div>
+
+    <!-- ── DELETE ── -->
+    <div id="secElimina" class="panel">
+      <p class="panel-title">DELETE · /impiegati/{id}</p>
+      <h2 class="panel-heading">Elimina impiegato</h2>
+      <div class="url-bar">
+        <span>Endpoint:</span>
+        <span class="url-endpoint">DELETE /impiegati/{id}</span>
+      </div>
+      <div class="note" style="background:rgba(255,79,107,.05);border-color:rgba(255,79,107,.2)">
+        <strong style="color:var(--danger)">Attenzione:</strong> L'eliminazione è definitiva e non può essere annullata.
+      </div>
+      <div id="risultatoElimina"></div>
+    </div>
+
+    <!-- ── Salary Analytics MS1→MS2 ── -->
+    <div id="secStipendio" class="panel">
+      <p class="panel-title">MS1 → MS2 · Salary Analytics</p>
+      <h2 class="panel-heading">Salary Analytics</h2>
+      <div class="url-bar">
+        <span>Endpoint:</span>
+        <span class="url-endpoint">GET /impiegati/{id}/salary</span>
+        <span style="margin-left:auto;font-size:0.68rem;color:var(--gold)">★ Microservizio 2</span>
+      </div>
+      <div class="note-gold"><strong>MS2:</strong> Calcolo fiscale italiano completo — IRPEF, INPS, detrazioni e Salary Score.</div>
+      <div class="form-group" style="max-width:280px">
+        <label>ID impiegato</label>
+        <input type="number" id="sId" placeholder="es. 1"/>
+      </div>
+      <button class="btn btn-ms2" onclick="getStipendio()">▶ Analizza</button>
+      <div id="risultatoStipendio"></div>
+    </div>
+
+    <!-- ── Permessi / Gestione Utenti (solo ADMIN) ── -->
+    <div id="secPermessi" class="panel">
+      <p class="panel-title">Admin · Gestione Utenti</p>
+      <h2 class="panel-heading" style="color:var(--gold)">⚙ Pannello Amministratore</h2>
+      <div class="url-bar" style="border-color:rgba(255,209,102,.2)">
+        <span>Endpoint:</span>
+        <span class="url-endpoint" style="color:var(--gold)">GET /auth/utenti</span>
+      </div>
+      <div class="note-gold"><strong>Permessi:</strong> Promuovi un utente USER al ruolo ADMIN, o retrocedilo a USER.</div>
+      <table class="tbl-gold">
+        <thead>
+        <tr><th>ID</th><th>Username</th><th>Ruolo</th><th>Azione</th></tr>
+        </thead>
+        <tbody id="corpoUtenti"></tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const API = 'http://localhost:8080';
+  let token = '';
+  let ruolo = '';
+  let listaAperta = false;
+
+  // ── Init ─────────────────────────────────────────────────
+  window.onload = () => {
+    token = localStorage.getItem('token') || '';
+    ruolo = localStorage.getItem('ruolo') || '';
+    const username = localStorage.getItem('username') || '';
+
+    if (!token) { location.href = '/login.html'; return; }
+
+    document.getElementById('infoUtente').textContent = username + ' (' + ruolo + ')';
+
+    if (ruolo === 'ADMIN') {
+      document.getElementById('menuAdmin').style.display = 'block';
+      document.getElementById('menuPermessi').style.display = 'block';
+      caricaUtenti();
+    }
+
+    mostra('secLista');
+  };
+
+  // ── Logout ───────────────────────────────────────────────
+  function logout() {
+    if (!confirm('Sei sicuro di voler uscire?')) return;
+    localStorage.clear();
+    location.href = '/login.html';
+  }
+
+  // ── Mostra panel + aggiorna active ───────────────────────
+  function mostra(id) {
+    document.querySelectorAll('.panel').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => {
+      b.classList.remove('active');
+      b.classList.remove('active-gold');
+    });
+    document.getElementById(id).classList.add('active');
+    const btn = document.getElementById('btn-' + id);
+    if (btn) {
+      if (id === 'secPermessi' || id === 'secStipendio') btn.classList.add('active-gold');
+      else btn.classList.add('active');
+    }
+    if (id === 'secPermessi') caricaUtenti();
+    if (id === 'secElimina') caricaListaDelete();
+  }
+
+  // ── Toggle lista (apri / chiudi) ─────────────────────────
+  function toggleLista() {
+    if (listaAperta) {
+      document.getElementById('risultatoLista').innerHTML = '';
+      document.getElementById('btnCaricaLista').textContent = '▶ Carica lista';
+      listaAperta = false;
+    } else {
+      getLista();
+    }
+  }
+
+  // ── Traduzione errori HTTP in messaggi leggibili ─────────
+  async function errorMsg(response, fallback) {
+    let body = '';
+    try { body = await response.text(); } catch(_) {}
+    if (body && !body.trim().startsWith('<') && body.length < 300) return body.trim();
+    const map = {
+      400: 'Dati non validi — controlla i campi inseriti',
+      401: 'Non autorizzato — effettua il login',
+      403: 'Accesso negato — operazione riservata agli amministratori',
+      404: 'Risorsa non trovata',
+      409: 'Conflitto — elemento già esistente',
+      422: 'Dati non elaborabili — controlla il formato dei campi',
+      500: 'Errore interno del server — riprova più tardi',
+      502: 'Server non raggiungibile — verifica che i microservizi siano attivi',
+      503: 'Servizio temporaneamente non disponibile',
+    };
+    return map[response.status] || (fallback || 'Errore ' + response.status);
+  }
+
+  function toast(testo, tipo) {
+    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    const t = document.createElement('div');
+    t.className = 'toast ' + (tipo || 'info');
+    t.innerHTML = `<span class="toast-icon">${icons[tipo] || 'ℹ'}</span><span class="toast-msg">${testo}</span>`;
+    document.getElementById('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+  }
+  function msg(testo, ok) { toast(testo, ok ? 'success' : 'error'); }
+
+  function headers() {
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  }
+
+  // ── Badge tipo impiegato ─────────────────────────────────
+  function tipoBadge(tipo) {
+    if (!tipo) return '';
+    const cls = { OPERAIO:'tipo-operaio', IMPIEGATO:'tipo-impiegato', QUADRO:'tipo-quadro', DIRIGENTE:'tipo-dirigente' };
+    return `<span class="${cls[tipo] || ''}">${tipo}</span>`;
+  }
+
+  // ── Tabella impiegati (con nuove colonne) ────────────────
+  function tabellaImpiegati(dati) {
+    if (!Array.isArray(dati)) dati = [dati];
+    if (dati.length === 0) return '<p class="empty-state">Nessun risultato.</p>';
+    return `
+      <p class="results-label">${dati.length} risultat${dati.length === 1 ? 'o' : 'i'}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Nome</th><th>Cognome</th><th>Email</th><th>Età</th>
+            <th>Tipo</th><th>Assunzione</th><th>Anni</th><th>Scatto</th><th>Stipendio</th><th>Bonus</th>
+          </tr>
+        </thead>
+        <tbody>${dati.map(e => {
+      const bonusCell = e.bonusEligibile
+              ? `<span class="bonus-si">✓ € ${(e.bonusAnnuale||0).toLocaleString('it-IT')}</span>`
+              : `<span class="bonus-no">non maturato</span>`;
+      return `<tr>
+            <td>${e.id}</td>
+            <td>${e.name||''}</td>
+            <td>${e.cognome||''}</td>
+            <td>${e.email||''}</td>
+            <td>${e.age||''}</td>
+            <td>${tipoBadge(e.tipoImpiegato)}</td>
+            <td style="font-family:var(--mono);font-size:0.8rem">${e.dataAssunzione||''}</td>
+            <td style="font-family:var(--mono);text-align:center">${e.anniAzienda != null ? e.anniAzienda : ''}</td>
+            <td style="font-size:0.78rem;color:var(--muted)">${e.scattoAnzianita||''}</td>
+            <td>${e.salary ? '€ ' + e.salary.toLocaleString('it-IT') : ''}</td>
+            <td>${bonusCell}</td>
+          </tr>`;
+    }).join('')}</tbody>
+      </table>`;
+  }
+
+  // ── Mostra risultato operazione (POST/PUT/PATCH) ─────────
+  function mostraRisultatoScrittura(containerId, emp) {
+    const bonusHtml = emp.bonusEligibile
+            ? `<span class="bonus-si">✓ € ${(emp.bonusAnnuale||0).toLocaleString('it-IT')} bonus annuale</span>`
+            : `<span class="bonus-no">bonus non ancora maturato</span>`;
+    document.getElementById(containerId).innerHTML = `
+      <div style="margin-top:18px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;border-left:3px solid var(--accent)">
+        <p class="results-label" style="margin-bottom:10px">Impiegato salvato</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.86rem">
+          <div><span style="color:var(--muted);font-family:var(--mono);font-size:0.68rem">ID</span><br/>${emp.id}</div>
+          <div><span style="color:var(--muted);font-family:var(--mono);font-size:0.68rem">NOME</span><br/>${emp.name||''} ${emp.cognome||''}</div>
+          <div><span style="color:var(--muted);font-family:var(--mono);font-size:0.68rem">TIPO</span><br/>${tipoBadge(emp.tipoImpiegato)}</div>
+          <div><span style="color:var(--muted);font-family:var(--mono);font-size:0.68rem">ANNI IN AZIENDA</span><br/>${emp.anniAzienda}</div>
+          <div><span style="color:var(--muted);font-family:var(--mono);font-size:0.68rem">STIPENDIO</span><br/><span style="color:var(--gold);font-weight:600">€ ${(emp.salary||0).toLocaleString('it-IT')}</span></div>
+          <div><span style="color:var(--muted);font-family:var(--mono);font-size:0.68rem">BONUS</span><br/>${bonusHtml}</div>
+        </div>
+      </div>`;
+  }
+
+  // ── GET lista ────────────────────────────────────────────
+  async function getLista() {
+    document.getElementById('btnCaricaLista').innerHTML = '<span class="spinner"></span> Caricamento...';
+    try {
+      const r = await fetch(API + '/impiegati', { headers: headers() });
+      if (!r.ok) { msg(await errorMsg(r, 'Impossibile caricare la lista degli impiegati'), false); document.getElementById('btnCaricaLista').textContent = '▶ Carica lista'; return; }
+      const dati = await r.json();
+      document.getElementById('risultatoLista').innerHTML = tabellaImpiegati(dati);
+      document.getElementById('btnCaricaLista').textContent = '■ Chiudi lista';
+      listaAperta = true;
+    } catch(e) { msg('Errore di rete', false); document.getElementById('btnCaricaLista').textContent = '▶ Carica lista'; }
+  }
+
+  // ── GET per ID ───────────────────────────────────────────
+  async function getPerId() {
+    const id = document.getElementById('inId').value;
+    if (!id) { msg('Inserisci un ID', false); return; }
+    try {
+      const r = await fetch(API + '/impiegati/id/' + id, { headers: headers() });
+      if (!r.ok) { msg(await errorMsg(r, 'Impiegato non trovato'), false); document.getElementById('risultatoId').innerHTML=''; return; }
+      document.getElementById('risultatoId').innerHTML = tabellaImpiegati(await r.json());
+    } catch(e) { msg('Errore di rete', false); }
+  }
+
+  // ── GET per cognome ──────────────────────────────────────
+  async function getPerCognome() {
+    const cog = document.getElementById('inCognome').value.trim();
+    if (!cog) { msg('Inserisci un cognome', false); return; }
+    try {
+      const r = await fetch(API + '/impiegati/cognome/' + encodeURIComponent(cog), { headers: headers() });
+      if (!r.ok) { msg(await errorMsg(r, 'Nessun impiegato trovato con questo cognome'), false); return; }
+      document.getElementById('risultatoCognome').innerHTML = tabellaImpiegati(await r.json());
+    } catch(e) { msg('Errore di rete', false); }
+  }
+
+  // ── POST crea ────────────────────────────────────────────
+  async function creaImpiegato() {
+    const tipo = document.getElementById('cTipo').value;
+    const data = document.getElementById('cDataAssunzione').value;
+    if (!tipo) { msg('Seleziona il tipo di impiegato', false); return; }
+    if (!data) { msg('Inserisci la data di assunzione', false); return; }
+    const body = {
+      name: document.getElementById('cNome').value,
+      cognome: document.getElementById('cCognome').value,
+      email: document.getElementById('cEmail').value,
+      age: parseInt(document.getElementById('cEta').value),
+      tipoImpiegato: tipo,
+      dataAssunzione: data,
+    };
+    try {
+      const r = await fetch(API + '/impiegati', { method:'POST', headers: headers(), body: JSON.stringify(body) });
+      if (r.ok) {
+        const emp = await r.json();
+        msg('Impiegato creato con successo!', true);
+        mostraRisultatoScrittura('risultatoCrea', emp);
+      } else { msg(await errorMsg(r, 'Errore nella creazione dell\'impiegato'), false); }
+    } catch(e) { msg('Errore di rete', false); }
+  }
+
+  // ── PUT ──────────────────────────────────────────────────
+  async function putImpiegato() {
+    const id = document.getElementById('pId').value;
+    const tipo = document.getElementById('pTipo').value;
+    const data = document.getElementById('pDataAssunzione').value;
+    if (!id) { msg('Inserisci l\'ID dell\'impiegato', false); return; }
+    if (!tipo) { msg('Seleziona il tipo di impiegato', false); return; }
+    if (!data) { msg('Inserisci la data di assunzione', false); return; }
+    const body = {
+      name: document.getElementById('pNome').value,
+      cognome: document.getElementById('pCognome').value,
+      email: document.getElementById('pEmail').value,
+      age: parseInt(document.getElementById('pEta').value),
+      tipoImpiegato: tipo,
+      dataAssunzione: data,
+    };
+    try {
+      const r = await fetch(API + '/impiegati/' + id, { method:'PUT', headers: headers(), body: JSON.stringify(body) });
+      if (r.ok) {
+        const emp = await r.json();
+        msg('Impiegato sostituito con successo!', true);
+        mostraRisultatoScrittura('risultatoPut', emp);
+      } else { msg(await errorMsg(r, 'Errore nell\'aggiornamento dell\'impiegato'), false); }
+    } catch(e) { msg('Errore di rete', false); }
+  }
+
+  // ── PATCH ────────────────────────────────────────────────
+  async function patchImpiegato() {
+    const id = document.getElementById('paId').value;
+    if (!id) { msg('Inserisci l\'ID dell\'impiegato', false); return; }
+    const body = {};
+    const n  = document.getElementById('paNome').value;
+    const c  = document.getElementById('paCognome').value;
+    const e  = document.getElementById('paEmail').value;
+    const a  = document.getElementById('paEta').value;
+    const t  = document.getElementById('paTipo').value;
+    const da = document.getElementById('paDataAssunzione').value;
+    if (n)  body.name           = n;
+    if (c)  body.cognome        = c;
+    if (e)  body.email          = e;
+    if (a)  body.age            = parseInt(a);
+    if (t)  body.tipoImpiegato  = t;
+    if (da) body.dataAssunzione = da;
+    if (Object.keys(body).length === 0) { msg('Compila almeno un campo da aggiornare', false); return; }
+    try {
+      const r = await fetch(API + '/impiegati/' + id, { method:'PATCH', headers: headers(), body: JSON.stringify(body) });
+      if (r.ok) {
+        const emp = await r.json();
+        msg('Impiegato aggiornato parzialmente!', true);
+        mostraRisultatoScrittura('risultatoPatch', emp);
+      } else { msg(await errorMsg(r, 'Errore nell\'aggiornamento parziale'), false); }
+    } catch(e) { msg('Errore di rete', false); }
+  }
+
+  // ── DELETE: carica tabella con bottoni elimina ───────────
+  async function caricaListaDelete() {
+    document.getElementById('risultatoElimina').innerHTML = '<span class="spinner"></span>';
+    try {
+      const r = await fetch(API + '/impiegati', { headers: headers() });
+      if (!r.ok) { msg(await errorMsg(r, 'Impossibile caricare la lista degli impiegati'), false); return; }
+      const dati = await r.json();
+      if (dati.length === 0) {
+        document.getElementById('risultatoElimina').innerHTML = '<p class="empty-state">Nessun impiegato trovato.</p>';
+        return;
+      }
+      document.getElementById('risultatoElimina').innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <p class="results-label" style="margin:0">${dati.length} impiegati</p>
+          <button class="btn btn-get" style="padding:5px 14px;font-size:0.8rem;margin:0" onclick="caricaListaDelete()">↺ Ricarica</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>Nome</th><th>Cognome</th><th>Tipo</th><th>Anni</th><th>Stipendio</th><th></th></tr></thead>
+          <tbody>${dati.map(e => `<tr>
+            <td>${e.id}</td>
+            <td>${e.name||''}</td>
+            <td>${e.cognome||''}</td>
+            <td>${tipoBadge(e.tipoImpiegato)}</td>
+            <td style="font-family:var(--mono);text-align:center">${e.anniAzienda != null ? e.anniAzienda : ''}</td>
+            <td>${e.salary ? '€ ' + e.salary.toLocaleString('it-IT') : ''}</td>
+            <td><button class="btn btn-del" style="padding:5px 14px;font-size:0.8rem;margin:0" onclick="eliminaRiga(${e.id}, '${(e.name||'')} ${(e.cognome||'')}')">🗑 Elimina</button></td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+    } catch(e) { msg('Errore di rete', false); }
+  }
+
+  async function eliminaRiga(id, nome) {
+    if (!confirm(`Sei sicuro di voler eliminare ${nome.trim() || 'l\'impiegato con ID ' + id}?`)) return;
+    try {
+      const r = await fetch(API + '/impiegati/' + id, { method:'DELETE', headers: headers() });
+      if (r.ok) { msg('Impiegato eliminato con successo!', true); caricaListaDelete(); }
+      else { msg(await errorMsg(r, 'Impossibile eliminare l\'impiegato'), false); }
+    } catch(e) { msg('Errore di rete', false); }
+  }
+
+  // ── Salary Analytics (MS2) ───────────────────────────────
+  async function getStipendio() {
+    const id = document.getElementById('sId').value;
+    if (!id) { msg('Inserisci un ID', false); return; }
+    try {
+      const r = await fetch(API + '/impiegati/' + id + '/salary', { headers: headers() });
+      if (!r.ok) { msg(await errorMsg(r, 'Impossibile recuperare i dati stipendiali'), false); return; }
+      const d = await r.json();
+
+      // Sezione bonus (dati vengono da MS1 via MS2, oppure da EmployeeResponse)
+      const bonusAnnuale   = d.bonusAnnuale   != null ? d.bonusAnnuale   : 0;
+      const bonusEligibile = d.bonusEligibile != null ? d.bonusEligibile : bonusAnnuale > 0;
+      const bonusHtml = bonusEligibile
+              ? `<div class="bonus-block">
+            <div>
+              <div class="bonus-label">Bonus annuale maturato</div>
+              <div class="bonus-amount">€ ${bonusAnnuale.toLocaleString('it-IT')}</div>
+            </div>
+            <div class="bonus-info">✓ Soglia anzianità raggiunta</div>
+           </div>`
+              : `<div class="bonus-block no-bonus">
+            <div>
+              <div class="bonus-label">Bonus annuale</div>
+              <div class="bonus-amount zero">non ancora maturato</div>
+            </div>
+            <div class="bonus-info">Soglia di anzianità non ancora raggiunta</div>
+           </div>`;
+
+      document.getElementById('risultatoStipendio').innerHTML = `
+        <div class="salary-card">
+          <div class="salary-header">
+            <div>
+              <div class="salary-name">${d.employeeName}</div>
+              <div class="salary-role">${d.roleCategory}</div>
+            </div>
+            <div class="score-ring">
+              <div class="score-num">${d.salaryScore}</div>
+              <div class="score-label">Salary Score</div>
+              <div class="score-bar-wrap"><div class="score-bar" style="width:${d.salaryScore}%"></div></div>
+            </div>
+          </div>
+
+          <div class="salary-grid">
+            <div class="salary-row">
+              <div class="salary-row-label">RAL Lorda</div>
+              <div class="salary-row-val val-yellow">€ ${d.ralLorda.toLocaleString('it-IT')}</div>
+            </div>
+            <div class="salary-row">
+              <div class="salary-row-label">Netto Annuo</div>
+              <div class="salary-row-val val-green">€ ${d.nettoAnnuo.toLocaleString('it-IT')}</div>
+            </div>
+            <div class="salary-row">
+              <div class="salary-row-label">Mensile Lordo ÷13</div>
+              <div class="salary-row-val val-purple">€ ${d.mensileLordo.toLocaleString('it-IT')}</div>
+            </div>
+            <div class="salary-row">
+              <div class="salary-row-label">Netto Mensile ÷13</div>
+              <div class="salary-row-val val-green">€ ${d.nettoMensile.toLocaleString('it-IT')}</div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="irpef-title">Dettaglio Fiscale</div>
+          <div class="irpef-row"><span class="irpef-row-label">IRPEF Scaglione 1 (23%)</span><span class="irpef-row-val val-red">€ ${d.irpefScaglione1.toLocaleString('it-IT')}</span></div>
+          <div class="irpef-row"><span class="irpef-row-label">IRPEF Scaglione 2 (35%)</span><span class="irpef-row-val val-red">€ ${d.irpefScaglione2.toLocaleString('it-IT')}</span></div>
+          <div class="irpef-row"><span class="irpef-row-label">IRPEF Scaglione 3 (43%)</span><span class="irpef-row-val val-red">€ ${d.irpefScaglione3.toLocaleString('it-IT')}</span></div>
+          <div class="irpef-row"><span class="irpef-row-label">IRPEF Netta Annua</span><span class="irpef-row-val val-red">€ ${d.irpefTotaleAnnuo.toLocaleString('it-IT')}</span></div>
+          <div class="irpef-row"><span class="irpef-row-label">Detrazioni Lavoro Dipendente</span><span class="irpef-row-val val-green">€ ${d.detrazioniLavoroDipendente.toLocaleString('it-IT')}</span></div>
+          <div class="irpef-row"><span class="irpef-row-label">INPS Annuo (9.19%)</span><span class="irpef-row-val val-red">€ ${d.inpsAnnuo.toLocaleString('it-IT')}</span></div>
+          <div class="irpef-row"><span class="irpef-row-label">Aliquota Effettiva</span><span class="irpef-row-val">${d.aliquotaEffettiva}%</span></div>
+          <div class="benchmark-tag">${d.salaryBenchmark}</div>
+
+          ${bonusHtml}
+        </div>`;
+    } catch(e) { msg('Errore di rete', false); }
+  }
+
+  // ── Carica utenti (admin) ────────────────────────────────
+  async function caricaUtenti() {
+    try {
+      const r = await fetch(API + '/auth/utenti', { headers: headers() });
+      if (!r.ok) return;
+      const utenti = await r.json();
+      const meUsername = localStorage.getItem('username') || '';
+      document.getElementById('corpoUtenti').innerHTML = utenti.map(u => {
+        const isMe = u.username === meUsername;
+        let azione;
+        if (isMe) {
+          azione = '<em style="color:var(--muted);font-size:0.8rem">account corrente</em>';
+        } else if (u.ruolo === 'ADMIN') {
+          azione = `<button class="btnRetrocedi" onclick="retrocedi(${u.id})">↓ Retrocedi a User</button>`;
+        } else {
+          azione = `<button class="btnPromuovi" onclick="promuovi(${u.id})">↑ Promuovi ad Admin</button>`;
+        }
+        return `<tr>
+          <td>${u.id}</td>
+          <td>${u.username}${isMe ? ' <span style="font-size:0.7rem;color:var(--gold)">(tu)</span>' : ''}</td>
+          <td><span class="${u.ruolo === 'ADMIN' ? 'badgeAdmin' : 'badgeUser'}">${u.ruolo}</span></td>
+          <td>${azione}</td>
+        </tr>`;
+      }).join('');
+    } catch(e) {}
+  }
+
+  async function promuovi(id) {
+    if (!confirm('Promuovere questo utente ad ADMIN?')) return;
+    try {
+      const r = await fetch(API + '/auth/promuovi/' + id, { method:'PATCH', headers: headers() });
+      if (r.ok) { msg('Utente promosso ad ADMIN!', true); caricaUtenti(); }
+      else { msg(await errorMsg(r, 'Impossibile promuovere l\'utente'), false); }
+    } catch(e) { msg('Errore di rete', false); }
+  }
+
+  async function retrocedi(id) {
+    if (!confirm('Retrocedere questo utente a USER?')) return;
+    try {
+      const r = await fetch(API + '/auth/retrocedi/' + id, { method:'PATCH', headers: headers() });
+      if (r.ok) { msg('Utente retrocesso a USER!', true); caricaUtenti(); }
+      else { msg(await errorMsg(r, 'Impossibile retrocedere l\'utente'), false); }
+    } catch(e) { msg('Errore di rete', false); }
+  }
+</script>
+</body>
+</html>
